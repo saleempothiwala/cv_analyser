@@ -1,0 +1,73 @@
+:root {
+    --primary-orange: #FF6B35;
+    --dark-grey: #292929;
+    --accent-red: #D90429;
+    --text-primary: #292929;
+}
+
+/* Main app styling */
+.stApp {
+    background-color: white;
+    font-family: 'Helvetica Neue', sans-serif;
+}
+
+/* Sidebar customization */
+.sidebar .sidebar-content {
+    background-color: var(--dark-grey) !important;
+    padding: 2rem 1rem;
+}
+
+.sidebar .logo {
+    width: 120px;
+    margin-bottom: 2rem;
+}
+
+/* Form elements */
+.stSelectbox>div>div {
+    background-color: var(--dark-grey) !important;
+    color: white !important;
+    border-radius: 4px;
+}
+
+.stFileUploader>section>div {
+    border: 2px dashed var(--primary-orange) !important;
+}
+
+/* Buttons */
+.stButton>button {
+    background-color: var(--primary-orange) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    transition: opacity 0.3s;
+}
+
+.stButton>button:hover {
+    opacity: 0.9;
+    color: white !important;
+}
+
+/* Typography */
+h1, h2, h3 {
+    color: var(--dark-grey) !important;
+    border-bottom: 2px solid var(--primary-orange);
+    padding-bottom: 0.5rem;
+}
+
+/* Results section */
+.metric-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-left: 4px solid var(--primary-orange);
+}
+
+/* Chart container */
+.plotly-chart-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}

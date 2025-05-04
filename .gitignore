@@ -1,0 +1,4 @@
+.venv/*
+utils/cpython-313.pyc
+__pycache__/
+.vscode/

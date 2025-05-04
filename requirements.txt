@@ -1,0 +1,13 @@
+streamlit
+python-docx
+pdfminer.six
+reportlab
+pillow
+pandas
+matplotlib
+plotly
+requests
+textract
+pypdf2
+plotly>=5.18.0
+kaleido>=0.2.1
