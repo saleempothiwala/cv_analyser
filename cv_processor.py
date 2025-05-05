@@ -92,7 +92,7 @@ def process_cv(file_path: str, job_category: str) -> Dict[str, Any]:
         
         # 4. Add raw text reference
         analysis['cv_text'] = cv_text[:100] + "..."  # Store excerpt
-        
+        print("cv_text", analysis['cv_text'])
         return analysis
         
     except Exception as e:

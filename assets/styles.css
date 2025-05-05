@@ -50,7 +50,7 @@
 
 /* Typography */
 h1, h2, h3 {
-    color: var(--dark-grey) !important;
+    color: var(--primary-orange) !important;
     border-bottom: 2px solid var(--primary-orange);
     padding-bottom: 0.5rem;
 }
@@ -70,4 +70,50 @@ h1, h2, h3 {
     padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+/* Success messages and file names */
+.stAlert .stMarkdown {
+    color: var(--primary-orange) !important;  /* #292929 */
+}
+
+/* File uploader text */
+.stFileUploader > section > div {
+    color: var(--primary-orange) !important;
+    border-color: var(--primary-orange) !important;  /* #FF6B35 */
+}
+
+/* Success message container */
+.stSuccess {
+    background-color: rgba(255, 107, 53, 0.1) !important;
+    border-left: 4px solid var(--primary-orange) !important;
+}
+
+/* All text elements */
+.stApp {
+    color: var(--primary-orange) !important;  /* #292929 */
+}
+
+/* Logo in sidebar */
+.sidebar .stImage {
+    padding: 20px 0;
+    text-align: center;
+}
+
+.sidebar img {
+    max-width: 180px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Success message styling */
+.stAlert [data-testid="stMarkdownContainer"] {
+    color: var(--dark-grey) !important;  /* #292929 */
+}
+
+.stSuccess {
+    background-color: rgba(255, 107, 53, 0.15) !important;  /* Light orange */
+    border-left: 4px solid var(--primary-orange) !important;
+    border-radius: 4px;
+    padding: 1rem;
 }

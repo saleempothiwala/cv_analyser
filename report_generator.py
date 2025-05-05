@@ -34,6 +34,9 @@ def create_pdf_styles():
 def generate_pdf_report(data, output_dir):
     # Initialize content list FIRST
     content = []
+    PAGE_HEIGHT = 842  # A4 height in points (11.69 inches)
+    current_height = 0
+    MARGIN = 50
     
     # 1. Create document template
     filename = f"{output_dir}/{data['name'].replace(' ', '_')}_report.pdf"
@@ -49,7 +52,7 @@ def generate_pdf_report(data, output_dir):
             parent=styles['Title'],
             textColor=colors.HexColor('#292929'),
             fontName='Helvetica-Bold',
-            fontSize=18,
+            fontSize=14,
             alignment=TA_CENTER
         ),
         'Heading2': ParagraphStyle(
@@ -57,14 +60,14 @@ def generate_pdf_report(data, output_dir):
             parent=styles['Heading2'],
             textColor=colors.HexColor('#FF6B35'),
             fontName='Helvetica-Bold',
-            fontSize=14
+            fontSize=12
         ),
         'Normal': ParagraphStyle(
             name='KermitNormal',
             parent=styles['Normal'],
             textColor=colors.HexColor('#292929'),
             fontSize=10,
-            leading=12
+            leading=10
         )
     }
 
@@ -75,7 +78,7 @@ def generate_pdf_report(data, output_dir):
 
         # Add header with proper style reference
         content.append(Paragraph("Kermit Tech Candidate Report", custom_styles['Title']))
-        content.append(Spacer(1, 12))
+        content.append(Spacer(1, 5))
         print("Generating PDF report...")
     except KeyError as e:
         raise RuntimeError(f"Missing style: {e}. Available styles: {list(custom_styles.keys())}") from e
@@ -87,34 +90,42 @@ def generate_pdf_report(data, output_dir):
    
     # Add sections
     sections = [
+        ("Candidate Name", data['name']),
         ("Professional Summary", data['summary']),
         ("Education", f"{data['education']['degree']} - {data['education']['university']}"),
-        ("Experience", f"Last Role: {data['experience']['last_title']} (ATS Score: {data['experience']['ats_score']}/100)"),
-        ("Skills Analysis", "Technical Ratings:")
+        ("Experience", f"Last Role: {data['experience']['last_title']} "),
+        ("Skills Analysis", "Ratings:")
+
     ]
     
     for section in sections:
         content.append(Paragraph(section[0], custom_styles['Heading2']))
         content.append(Paragraph(section[1], custom_styles['Normal']))
-        content.append(Spacer(1, 8))
+        content.append(Spacer(1, 5))
     
     # Add radar chart
     chart_path = create_radar_chart(data['analysis'])
     print("Radar chart path:", chart_path)
-    content.append(Image(chart_path, width=400, height=300))
-    content.append(Spacer(1, 20))
+    content.append(Image(chart_path, width=300, height=250))
+    content.append(Spacer(1, 5))
     
     # Add interview questions table
     content.append(Paragraph("Interview Questions", custom_styles['Heading2']))
     questions_table = Table(
-        [[str(i+1), q] for i, q in enumerate(data['interview_questions'])],
-        colWidths=[30, 400],
+        [
+            [str(i+1), Paragraph(q, styles['Normal'])] 
+            for i, q in enumerate(data['interview_questions'])
+        ],
+        colWidths=[30, 300],
+        rowHeights=[None] * len(data['interview_questions']),  # Auto-height
         style=[
             ('BACKGROUND', (0,0), (-1,0), KERMIT_COLORS['primary']),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('ALIGN', (0,0), (0,-1), 'CENTER'),
-            ('GRID', (0,0), (-1,-1), 1, KERMIT_COLORS['accent'])
+            ('GRID', (0,0), (-1,-1), 1, KERMIT_COLORS['accent']),
+            ('WORDWRAP', (1,0), (1,-1), 'CJK'),  # Enable word wrap
+            ('VALIGN', (0,0), (-1,-1), 'TOP')     # Align content to top
         ]
     )
     content.append(questions_table)
@@ -139,3 +150,4 @@ def combine_pdfs(pdf_paths):
     merger.close()
     
     return combined_buffer.getvalue()
+

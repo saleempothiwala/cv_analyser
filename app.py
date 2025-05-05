@@ -22,7 +22,11 @@ def main():
     local_css(os.path.join("assets", "styles.css"))
     
     with st.sidebar:
-        st.markdown('<img src="assets/kermittech-logo.png" class="logo">', unsafe_allow_html=True)
+        st.image(
+            "assets/kermittech-logo.png",
+            use_container_width=True,  # Modern parameter
+            output_format="PNG"
+        )
         job_category = st.selectbox("Select Job Category", ["Data Engineer", "Data Analyst", "AI Engineer", "UI/UX Developer"])
     
     st.header("CV Analysis Platform")
@@ -58,13 +62,35 @@ def main():
                 if DEBUG:
                     st.error(f"Processing Error: {error_msg}")
                     st.code(f"Error details: {traceback.format_exc()[-500:]}")
+
+
         if analysis_results:
-            st.success(f"Processed {len(analysis_results)} CV(s) successfully!")
-            # Display first result
-            with st.container():
-                st.subheader("Analysis Results")
-                st.json(analysis_results[0][0])
-                
+            success_message = """
+            <div style='color:#292929; padding:1rem; border-left:4px solid #FF6B35; background-color:rgba(255,107,53,0.15)'>
+                <strong>✓ CV processed successfully!</strong>
+            </div>
+            """
+            st.markdown(success_message, unsafe_allow_html=True)
+            
+            # Show download button for first report
+            with open(analysis_results[0][1], "rb") as f:
+                st.download_button(
+                    label="Download PDF Report",
+                    data=f,
+                    file_name=f"{analysis_results[0][0]['name']}_report.pdf",
+                    mime="application/pdf"
+                )
+            
+            # For multiple files
+            if len(analysis_results) > 1:
+                combined_pdf = combine_pdfs([res[1] for res in analysis_results])
+                st.download_button(
+                    label="Download All Reports",
+                    data=combined_pdf,
+                    file_name="combined_reports.pdf",
+                    mime="application/pdf"
+                )    
+
         if errors:
             st.error(f"Failed to process {len(errors)} CV(s)")
             for error in errors:
