@@ -7,7 +7,10 @@ pandas
 matplotlib
 plotly
 requests
-textract
 pypdf2
-plotly>=5.18.0
-kaleido>=0.2.1
+plotly
+kaleido
+whisper-ctranslate2 
+torch
+ffmpeg-python
+pdfplumber

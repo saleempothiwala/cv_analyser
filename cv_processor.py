@@ -4,7 +4,7 @@ import logging
 import requests
 from typing import Dict, Any
 from utils.file_handlers import extract_cv_text
-from analysis_prompt import ANALYSIS_PROMPT
+from analysis_prompt import ANALYSIS_PROMPT, AUDIO_ANALYSIS_PROMPT
 from json import JSONDecodeError
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,53 @@ def analyze_with_granite(cv_text: str, prompt_template: str, job_category: str) 
         full_prompt = ANALYSIS_PROMPT.format(job_category=job_category)
         full_prompt += f"\n\nCV Text:\n{cv_text[:3000]}"
         print("full_prompt_analyze_with_granite", full_prompt[:100])
+        response = requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                "model": "granite3.3",  # Match exact model name
+                "prompt": full_prompt,
+                "format": "json",
+                "stream": False
+            },
+            timeout=120
+        )
+        response.raise_for_status()
+        print("Raw API Response:", response.text)
+        
+        # Extract and clean JSON string
+        raw_data = response.json()
+        json_str = raw_data.get("response", "{}")
+        
+        # Fix common formatting issues
+        json_str = json_str.strip()
+        json_str = json_str.replace("\\n", "").replace("\\t", "")
+        
+        # Handle nested JSON encoding
+        try:
+            result = json.loads(json_str)
+        except JSONDecodeError:
+            # Remove extra backslashes
+            json_str = json_str.encode().decode('unicode_escape')
+            result = json.loads(json_str)
+        
+        print("Parsed Result:", result)
+        return result
+        
+    except JSONDecodeError as e:
+        logger.error(f"JSON Decode Failed. Cleaned String: {json_str}")
+        raise ValueError("Invalid JSON format from model") from e
+
+def analyze_audio_with_granite(cv_text: str, prompt_template: str, job_category: str) -> Dict[str, Any]:
+    """Handle Ollama's nested JSON response format"""
+    print("Analyzing Audio with Granite model...")
+    print("cv_text_analyze_audio_with_granite", cv_text[:100])
+    print("job_category_analyze_audio_with_granite", job_category)
+    print("prompt_template_analyze_audio_with_granite", prompt_template[:100])
+    # Ensure the prompt template is formatted correctly
+    try:
+        full_prompt = AUDIO_ANALYSIS_PROMPT.format(job_category=job_category)
+        full_prompt += f"\n\nCV Text:\n{cv_text[:3000]}"
+        print("full_prompt_analyze_audio_with_granite", full_prompt[:100])
         response = requests.post(
             'http://localhost:11434/api/generate',
             json={

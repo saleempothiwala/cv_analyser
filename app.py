@@ -2,9 +2,115 @@ import streamlit as st
 import os
 import tempfile
 import traceback
-from report_generator import generate_pdf_report, combine_pdfs
+from report_generator import generate_pdf_report, combine_pdfs, generate_pdf_report_with_audio
 from utils import save_uploaded_file, extract_cv_text
 from cv_processor import process_cv
+from audio_processor import AudioProcessor
+from utils.visualization import create_radar_chart
+import ssl
+import whisper
+
+import asyncio
+import sys
+os.environ['STREAMLIT_SERVER_ENABLE_STATIC_FILE_WATCHER'] = 'false'
+
+# Disable Torch class inspection
+import torch
+torch._C._disable_class_wrapper = True
+
+if sys.platform == "win32" and (3, 8, 0) <= sys.version_info < (3, 9, 0):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# Disable Streamlit's problematic file watcher
+import streamlit as st
+st.runtime.instances = []
+
+
+@st.cache_resource
+def load_processor():
+    try:
+        ssl._create_default_https_context = ssl._create_unverified_context
+        return AudioProcessor(model_size="base")  # or "tiny" for less powerful machines
+    except Exception as e:
+        st.error(f"Failed to initialize audio processor: {str(e)}")
+        return None
+
+def display_results(cv_analysis, audio_analysis=None, combined_analysis=None):
+    """Display analysis results in Streamlit UI"""
+    if audio_analysis:
+        # Create tabs for different views
+        tab1, tab2, tab3 = st.tabs(["CV Analysis", "Audio Analysis", "Combined"])
+        
+        with tab1:
+            display_cv_results(cv_analysis)
+            
+        with tab2:
+            display_audio_results(audio_analysis)
+            
+        with tab3:
+            display_combined_results(cv_analysis, audio_analysis)
+    else:
+        display_cv_results(cv_analysis)
+
+def display_cv_results(analysis):
+    """Display CV analysis results"""
+    st.subheader("CV Analysis Report")
+    st.write(f"**Candidate:** {analysis['name']}")
+    
+    # Education
+    with st.expander("Education"):
+        st.write(f"**Degree:** {analysis['education']['degree']}")
+        st.write(f"**University:** {analysis['education']['university']}")
+    
+    # Skills Radar Chart
+    st.subheader("Skills Analysis")
+    fig = create_radar_chart(analysis['analysis'])
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Interview Questions
+    st.subheader("Suggested Interview Questions")
+    for i, question in enumerate(analysis['interview_questions'], 1):
+        st.write(f"{i}. {question}")
+
+def display_audio_results(analysis):
+    """Display audio analysis results"""
+    st.subheader("Interview Audio Analysis")
+    
+    # Audio metrics
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Communication Score", f"{analysis['communication_score']}/5")
+        st.metric("Technical Depth", f"{analysis['technical_depth']}/5")
+    
+    with col2:
+        st.metric("Confidence Level", f"{analysis['confidence']}/5")
+        st.metric("Keyword Usage", f"{analysis['keyword_usage']}/5")
+    
+    # Red flags
+    if analysis['red_flags']:
+        st.warning("**Potential Concerns:**")
+        for flag in analysis['red_flags']:
+            st.write(f"- {flag}")
+
+def display_combined_results(cv_analysis, audio_analysis):
+    """Display combined analysis"""
+    combined_score = (cv_analysis['analysis']['technical_experience'] * 0.6 + 
+                     audio_analysis['technical_depth'] * 0.4)
+    
+    st.subheader("Combined Evaluation")
+    st.metric("Overall Score", f"{combined_score:.1f}/5.0")
+    
+    # Progress bar
+    st.progress(combined_score/5)
+    
+    # Recommendations
+    if combined_score >= 4:
+        st.success("**Strong Candidate** - Recommended for next round")
+    elif combined_score >= 3:
+        st.info("**Potential Candidate** - Worth considering")
+    else:
+        st.warning("**Needs Improvement** - May not be suitable")
+
 
 # Add debug mode
 DEBUG = st.secrets.get("DEBUG", False)
@@ -28,9 +134,15 @@ def main():
             output_format="PNG"
         )
         job_category = st.selectbox("Select Job Category", ["Data Engineer", "Data Analyst", "AI Engineer", "UI/UX Developer"])
+        audio_enabled = st.checkbox("Include Interview Audio Analysis")
     
     st.header("CV Analysis Platform")
     uploaded_files = st.file_uploader("Upload Candidate CVs", type=["pdf", "docx"], accept_multiple_files=True)
+
+    if audio_enabled:
+        audio_file = st.file_uploader("Upload Interview Audio", type=["wav", "mp3"])
+    else:
+        audio_file = None
 
     if uploaded_files:
         temp_dir = tempfile.mkdtemp()
@@ -51,9 +163,12 @@ def main():
                     print("result", result)
                     if DEBUG: st.json(result)
 
+                    if audio_enabled:
+                        print("Audio analysis enabled")
+                    else:
                     # Generate report
-                    pdf_path = generate_pdf_report(result, temp_dir)
-                    analysis_results.append((result, pdf_path))
+                        pdf_path = generate_pdf_report(result, temp_dir)
+                        analysis_results.append((result, pdf_path))
                     
             except Exception as e:
                 base_name = os.path.basename(file_path) if file_path else file.name
@@ -62,6 +177,29 @@ def main():
                 if DEBUG:
                     st.error(f"Processing Error: {error_msg}")
                     st.code(f"Error details: {traceback.format_exc()[-500:]}")
+
+
+        if audio_file:
+            try:
+                processor = AudioProcessor("base")  # or "small", "tiny"
+                
+                with st.spinner("Processing audio (this may take a few minutes)..."):
+                    transcript = processor.process_audio(audio_file, job_category)
+                    
+                    if transcript:
+                        st.success("Audio transcription successful!")
+                        st.text_area("Transcript", transcript, height=200)
+                        pdf_path = generate_pdf_report_with_audio(result, transcript, temp_dir)
+                        analysis_results.append((result, pdf_path))
+                        # Continue with your analysis...
+                    else:
+                        st.error("Failed to transcribe audio - please check the file format")
+                        
+            except Exception as e:
+                st.error(f"Audio processing error: {str(e)}")
+                st.info("Supported formats: MP3, WAV, M4A, FLAC")
+                
+        #display_results(result, audio_analysis, combined_analysis)
 
 
         if analysis_results:
